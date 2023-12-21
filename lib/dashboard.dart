@@ -95,10 +95,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              _buildShiftTile("Shift Pagi", "09.00 - 14.00", Icons.sunny,
+              _buildShiftTile("Shift Pagi", "00.00 - 12.00", Icons.sunny,
                   isShiftPagiExpanded),
               const SizedBox(height: 30),
-              _buildShiftTile("Shift Sore", "15.00 - 20.00", Icons.cloud,
+              _buildShiftTile("Shift Sore", "12.00 - 24.00", Icons.cloud,
                   isShiftSoreExpanded),
               const SizedBox(height: 50),
               ElevatedButton(
@@ -260,7 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     int hour = now.hour;
 
     if ((isShiftPagiExpanded || isShiftSoreExpanded) &&
-        (hour >= 9 && hour < 14 || hour >= 15 && hour < 23)) {
+        (hour >= 0 && hour < 12 || hour >= 12 && hour < 24)) {
       // Disable the button when a shift is active
       return null;
     }
