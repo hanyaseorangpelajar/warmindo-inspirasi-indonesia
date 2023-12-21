@@ -12,7 +12,7 @@ class LoginScreen extends StatelessWidget {
         password: password,
       );
 
-      Navigator.pushNamed(context, '/order_list');
+      Navigator.pushNamed(context, '/dashboard');
     } catch (e) {
       // Handle login failure (display an error message, for example)
       print("Error during login: $e");

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart';
 
-class OrderDetailsScreen extends StatefulWidget {
-  const OrderDetailsScreen({
+class AddOrderScreen extends StatefulWidget {
+  const AddOrderScreen({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+  State<AddOrderScreen> createState() => _AddOrderScreenState();
 }
 
-class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+class _AddOrderScreenState extends State<AddOrderScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  String _transactionNumber = '';
-  String _transactionDate = '';
   String _transactionDetails = '';
-  String _transactionTotal = '';
+  double _transactionTotal = 0.0;
   String _transactionStatus = 'Pending';
   String _selectedPaymentMethod = 'Cash';
 
@@ -30,9 +31,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          color: Colors.white, // Set the color to white
+          color: Colors.white,
           onPressed: () {
-            Navigator.pop(context);
+            // Navigate to the '/order_list' route and replace the current route
+            Navigator.pushReplacementNamed(context, '/order_list');
           },
         ),
       ),
@@ -40,53 +42,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Card(
           elevation: 5.0,
-          margin: EdgeInsets.all(10.0), // Add margin to the Card
+          margin: EdgeInsets.all(10.0),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
               child: SingleChildScrollView(
-                // Wrap with SingleChildScrollView
                 child: Column(
                   children: [
-                    // Rekap pesanan
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8.0),
                       child: TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'No. Transaksi',
-                          labelStyle: TextStyle(color: Colors.black),
-                          hintText: 'Enter transaction number',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        style: TextStyle(color: Colors.black),
-                        initialValue: _transactionNumber,
-                        onSaved: (value) {
-                          _transactionNumber = value ?? '';
-                        },
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Tanggal',
-                          labelStyle: TextStyle(color: Colors.black),
-                          hintText: 'Enter transaction date',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        style: TextStyle(color: Colors.black),
-                        initialValue: _transactionDate,
-                        onSaved: (value) {
-                          _transactionDate = value ?? '';
-                        },
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextFormField(
-                        maxLines:
-                            null, // Set maxLines to null for multiline input
+                        maxLines: null,
                         decoration: InputDecoration(
                           labelText: 'Pesanan',
                           labelStyle: TextStyle(color: Colors.black),
@@ -104,16 +71,23 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       margin: EdgeInsets.symmetric(vertical: 8.0),
                       child: TextFormField(
                         decoration: InputDecoration(
-                          labelText: 'Total',
+                          labelText: 'Nominal',
                           labelStyle: TextStyle(color: Colors.black),
                           hintText: 'Enter transaction total',
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
                         style: TextStyle(color: Colors.black),
-                        initialValue: _transactionTotal,
-                        onSaved: (value) {
-                          _transactionTotal = value ?? '';
+                        initialValue: _transactionTotal.toString(),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          // Parse the entered value to double
+                          _transactionTotal = double.tryParse(value) ?? 0.0;
                         },
+                        // Format the total as IDR
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}')),
+                        ],
                       ),
                     ),
                     // Informasi status
@@ -176,16 +150,43 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         ),
                       ),
                     ),
-                    // Tombol selesaikan pesanan
                     SizedBox(
-                        height:
-                            16.0), // Add some space between the dropdown and the buttons
+                      height: 16.0,
+                    ),
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8.0),
                       child: ElevatedButton(
-                        onPressed: () {
-                          _formKey.currentState?.save();
-                          // Handle update logic with the updated data
+                        onPressed: () async {
+                          if (_formKey.currentState?.validate() ?? false) {
+                            // Form is valid, proceed to add data to Firestore
+                            _formKey.currentState?.save();
+
+                            // Generate a unique transaction number using the uuid package
+                            String uniqueTransactionNumber = Uuid().v4();
+
+                            // Set the transaction date to the current date and time
+                            DateTime now = DateTime.now();
+                            String formattedDate =
+                                "${now.year}-${now.month}-${now.day} ${now.hour}:${now.minute}:${now.second}";
+
+                            // Firestore reference to your collection
+                            CollectionReference orders =
+                                FirebaseFirestore.instance.collection('orders');
+
+                            // Add data to Firestore
+                            await orders.add({
+                              'transactionNumber': uniqueTransactionNumber,
+                              'transactionDate': formattedDate,
+                              'transactionDetails': _transactionDetails,
+                              'transactionTotal': _transactionTotal,
+                              'transactionStatus': _transactionStatus,
+                              'selectedPaymentMethod': _selectedPaymentMethod,
+                            });
+
+                            print('Order added to Firestore');
+                            Navigator.pop(context);
+                            _formKey.currentState?.reset();
+                          }
                         },
                         child: Text('Add Order'),
                       ),

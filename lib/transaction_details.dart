@@ -1,213 +1,174 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class TransactionDetailsScreen extends StatefulWidget {
-  const TransactionDetailsScreen({
-    Key? key,
-  }) : super(key: key);
+class UpdateDeleteScreen extends StatefulWidget {
+  final Map<String, dynamic> orderData;
+
+  const UpdateDeleteScreen({Key? key, required this.orderData})
+      : super(key: key);
 
   @override
-  State<TransactionDetailsScreen> createState() =>
-      _TransactionDetailsScreenState();
+  _UpdateDeleteScreenState createState() => _UpdateDeleteScreenState();
 }
 
-class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class _UpdateDeleteScreenState extends State<UpdateDeleteScreen> {
+  late String _transactionDetails;
+  late double _transactionTotal;
+  late String _transactionStatus;
+  late String _selectedPaymentMethod;
 
-  String _transactionNumber = '123456789';
-  String _transactionDate = '2023-01-01';
-  String _transactionDetails = 'Magelangan: 2';
-  String _transactionTotal = 'Rp 500,000';
-  String _transactionStatus = 'Pending';
-  String _selectedPaymentMethod = 'Cash';
+  TextEditingController _detailsController = TextEditingController();
+  TextEditingController _totalController = TextEditingController();
+  TextEditingController _statusController = TextEditingController();
+  TextEditingController _paymentMethodController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _transactionDetails = widget.orderData['transactionDetails'];
+    _transactionTotal = widget.orderData['transactionTotal'];
+    _transactionStatus = widget.orderData['transactionStatus'];
+    _selectedPaymentMethod = widget.orderData['selectedPaymentMethod'];
+
+    _detailsController.text = _transactionDetails;
+    _totalController.text = _transactionTotal.toString();
+    _statusController.text = _transactionStatus;
+    _paymentMethodController.text = _selectedPaymentMethod;
+  }
+
+  Future<void> fetchData() async {
+    String transactionNumber = widget.orderData['transactionNumber'];
+
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection("orders")
+        .where('transactionNumber', isEqualTo: transactionNumber)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      Map<String, dynamic> updatedData =
+          querySnapshot.docs.first.data() as Map<String, dynamic>;
+
+      setState(() {
+        _transactionDetails = updatedData['transactionDetails'];
+        _transactionTotal = updatedData['transactionTotal'];
+        _transactionStatus = updatedData['transactionStatus'];
+        _selectedPaymentMethod = updatedData['selectedPaymentMethod'];
+      });
+    } else {
+      print("Document with transactionNumber $transactionNumber not found");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Detail Transaksi',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          color: Colors.white, // Set the color to white
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        title: Text('Update/Delete Transaction'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Card(
-          elevation: 5.0,
-          margin: EdgeInsets.all(10.0), // Add margin to the Card
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                // Wrap with SingleChildScrollView
-                child: Column(
-                  children: [
-                    // Rekap pesanan
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'No. Transaksi',
-                          labelStyle: TextStyle(color: Colors.black),
-                          hintText: 'Enter transaction number',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        style: TextStyle(color: Colors.black),
-                        initialValue: _transactionNumber,
-                        onSaved: (value) {
-                          _transactionNumber = value ?? '';
-                        },
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Tanggal',
-                          labelStyle: TextStyle(color: Colors.black),
-                          hintText: 'Enter transaction date',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        style: TextStyle(color: Colors.black),
-                        initialValue: _transactionDate,
-                        onSaved: (value) {
-                          _transactionDate = value ?? '';
-                        },
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextFormField(
-                        maxLines:
-                            null, // Set maxLines to null for multiline input
-                        decoration: InputDecoration(
-                          labelText: 'Pesanan',
-                          labelStyle: TextStyle(color: Colors.black),
-                          hintText: 'Enter transaction details',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        style: TextStyle(color: Colors.black),
-                        initialValue: _transactionDetails,
-                        onSaved: (value) {
-                          _transactionDetails = value ?? '';
-                        },
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Total',
-                          labelStyle: TextStyle(color: Colors.black),
-                          hintText: 'Enter transaction total',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        style: TextStyle(color: Colors.black),
-                        initialValue: _transactionTotal,
-                        onSaved: (value) {
-                          _transactionTotal = value ?? '';
-                        },
-                      ),
-                    ),
-                    // Informasi status
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: DropdownButtonFormField(
-                        onChanged: (value) {
-                          setState(() {
-                            _transactionStatus = value.toString();
-                          });
-                        },
-                        value: _transactionStatus,
-                        items: [
-                          DropdownMenuItem(
-                            value: 'Pending',
-                            child: Text('Pending'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Done',
-                            child: Text('Done'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Failed',
-                            child: Text('Failed'),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Status',
-                          labelStyle: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                    // Pilihan pembayaran
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: DropdownButtonFormField(
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedPaymentMethod = value.toString();
-                          });
-                        },
-                        value: _selectedPaymentMethod,
-                        items: [
-                          DropdownMenuItem(
-                            value: 'Cash',
-                            child: Text('Cash'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Transfer',
-                            child: Text('Transfer'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Kredit',
-                            child: Text('Kredit'),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Pilihan Pembayaran',
-                          labelStyle: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                    // Tombol selesaikan pesanan
-                    SizedBox(
-                        height:
-                            16.0), // Add some space between the dropdown and the buttons
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _formKey.currentState?.save();
-                          // Handle update logic with the updated data
-                        },
-                        child: Text('Update'),
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Handle delete logic
-                        },
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.red, // Set the button color to red
-                        ),
-                        child: Text('Delete'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                'Transaction Number: ${widget.orderData['transactionNumber']}'),
+            TextFormField(
+              controller: _detailsController,
+              decoration: InputDecoration(labelText: 'Transaction Details'),
             ),
-          ),
+            TextFormField(
+              controller: _totalController,
+              decoration: InputDecoration(labelText: 'Transaction Total'),
+              keyboardType: TextInputType.number,
+            ),
+            TextFormField(
+              controller: _statusController,
+              decoration: InputDecoration(labelText: 'Transaction Status'),
+            ),
+            TextFormField(
+              controller: _paymentMethodController,
+              decoration: InputDecoration(labelText: 'Payment Method'),
+            ),
+            SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    String transactionNumber =
+                        widget.orderData['transactionNumber'];
+
+                    // Get a reference to the document
+                    QuerySnapshot querySnapshot = await FirebaseFirestore
+                        .instance
+                        .collection("orders")
+                        .where('transactionNumber',
+                            isEqualTo: transactionNumber)
+                        .get();
+
+                    if (querySnapshot.docs.isNotEmpty) {
+                      String documentID = querySnapshot.docs.first.id;
+
+                      // Update the document with new data
+                      await FirebaseFirestore.instance
+                          .collection("orders")
+                          .doc(documentID)
+                          .update({
+                        'transactionDetails': _detailsController.text,
+                        'transactionTotal': double.parse(_totalController.text),
+                        'transactionStatus': _statusController.text,
+                        'selectedPaymentMethod': _paymentMethodController.text,
+                      });
+
+                      // Fetch updated data
+                      await fetchData();
+
+                      print("Document updated");
+                      Navigator.pop(context);
+                    } else {
+                      print(
+                          "Document with transactionNumber $transactionNumber not found");
+                    }
+                  },
+                  child: Text('Update'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    String transactionNumber =
+                        widget.orderData['transactionNumber'];
+
+                    FirebaseFirestore.instance
+                        .collection("orders")
+                        .where('transactionNumber',
+                            isEqualTo: transactionNumber)
+                        .get()
+                        .then((querySnapshot) {
+                      if (querySnapshot.docs.isNotEmpty) {
+                        String documentID = querySnapshot.docs.first.id;
+                        FirebaseFirestore.instance
+                            .collection("orders")
+                            .doc(documentID)
+                            .delete()
+                            .then(
+                          (doc) {
+                            print("Document deleted");
+                            Navigator.pop(context);
+                          },
+                          onError: (e) => print("Error deleting document: $e"),
+                        );
+                      } else {
+                        print(
+                            "Document with transactionNumber $transactionNumber not found");
+                      }
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(primary: Colors.red),
+                  child: Text('Delete'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

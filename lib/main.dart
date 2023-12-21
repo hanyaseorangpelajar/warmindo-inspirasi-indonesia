@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:warmindo/login.dart';
-import 'package:warmindo/transaction_details.dart';
 import 'package:warmindo/add_order.dart';
 import 'package:warmindo/order_list.dart';
+import 'package:warmindo/dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,9 +23,11 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/transaction_details': (context) => const TransactionDetailsScreen(),
-        '/add_order': (context) => const OrderDetailsScreen(),
-        '/order_list': (context) => const OrderListScreen(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/add_order': (context) => const AddOrderScreen(),
+        '/order_list': (context) => const ListTransaksi(
+              title: 'ListTransaksi',
+            ),
       },
     );
   }
